@@ -105,7 +105,7 @@ import Moment from 'moment';
       }
 
       // Determine if charging
-      const charging = emob.chargingStatus == 'CHARGING';
+      const charging = emob.batteryChargeStatus.chargingState == 'CHARGING';
 
       // Cache position
       cachedPosition.position = position.carCoordinate;

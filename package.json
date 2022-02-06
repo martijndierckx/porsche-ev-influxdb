@@ -7,7 +7,7 @@
   "dependencies": {
     "@influxdata/influxdb-client": "^1.22.0",
     "moment": "^2.29.1",
-    "porsche-connect": "^0.0.5",
+    "porsche-connect": "^0.0.6",
     "source-map-support": "^0.5.21",
     "tldts": "^5.7.59",
     "tslib": "~2.3.1"

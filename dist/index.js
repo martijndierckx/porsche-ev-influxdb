@@ -83,7 +83,7 @@ const moment_1 = (0, tslib_1.__importDefault)(require("moment"));
                 cachedPosition.position.longitude != position.carCoordinate.longitude) {
                 parked = false;
             }
-            const charging = emob.chargingStatus == 'CHARGING';
+            const charging = emob.batteryChargeStatus.chargingState == 'CHARGING';
             cachedPosition.position = position.carCoordinate;
             cachedPosition.parkedOrCharging = parked || charging;
             cachedPosition.ts = (0, moment_1.default)();
