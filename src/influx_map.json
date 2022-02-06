@@ -11,8 +11,8 @@
   "pluggedIn": { "_type": "boolean", "_mapping": "pluggedIn" },
   "charging": { "_type": "boolean", "_mapping": "charging" },
   "charge": {
-    "rate": { "_type": "boolean", "_mapping": "chargeRate" },
-    "power": { "_type": "boolean", "_mapping": "chargePower" },
+    "rate": { "_type": "float", "_mapping": "chargeRate" },
+    "power": { "_type": "float", "_mapping": "chargePower" },
     "DC": { "_type": "boolean", "_mapping": "chargingDC" }
   }
 }
