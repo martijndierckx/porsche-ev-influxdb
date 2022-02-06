@@ -39,7 +39,7 @@ const moment_1 = (0, tslib_1.__importDefault)(require("moment"));
             latitude: null,
             longitude: null
         },
-        parked: false,
+        parkedOrCharging: false,
         ts: null
     };
     let running = false;
@@ -47,8 +47,8 @@ const moment_1 = (0, tslib_1.__importDefault)(require("moment"));
         const timeSinceLastFetch = (0, moment_1.default)().diff(cachedPosition.ts ?? 0);
         if (!running &&
             (cachedPosition.ts == null ||
-                (timeSinceLastFetch >= INTERVAL && !cachedPosition.parked) ||
-                (timeSinceLastFetch >= INTERVAL_PARKED && cachedPosition.parked))) {
+                (timeSinceLastFetch >= INTERVAL && !cachedPosition.parkedOrCharging) ||
+                (timeSinceLastFetch >= INTERVAL_PARKED && cachedPosition.parkedOrCharging))) {
             running = true;
             let overview;
             try {
@@ -83,10 +83,10 @@ const moment_1 = (0, tslib_1.__importDefault)(require("moment"));
                 cachedPosition.position.longitude != position.carCoordinate.longitude) {
                 parked = false;
             }
-            cachedPosition.position = position.carCoordinate;
-            cachedPosition.parked = parked;
-            cachedPosition.ts = (0, moment_1.default)();
             const charging = emob.chargingStatus == 'CHARGING';
+            cachedPosition.position = position.carCoordinate;
+            cachedPosition.parkedOrCharging = parked || charging;
+            cachedPosition.ts = (0, moment_1.default)();
             const data = {
                 batteryLevel: overview.batteryLevel.value,
                 remainingElectricRange: overview.remainingRanges.electricalRange.distance.valueInKilometers,

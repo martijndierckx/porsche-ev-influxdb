@@ -48,7 +48,7 @@ import Moment from 'moment';
       latitude: null,
       longitude: null
     },
-    parked: false,
+    parkedOrCharging: false,
     ts: null
   };
 
@@ -59,8 +59,8 @@ import Moment from 'moment';
     if (
       !running &&
       (cachedPosition.ts == null ||
-        (timeSinceLastFetch >= INTERVAL && !cachedPosition.parked) ||
-        (timeSinceLastFetch >= INTERVAL_PARKED && cachedPosition.parked))
+        (timeSinceLastFetch >= INTERVAL && !cachedPosition.parkedOrCharging) ||
+        (timeSinceLastFetch >= INTERVAL_PARKED && cachedPosition.parkedOrCharging))
     ) {
       running = true;
 
@@ -104,13 +104,15 @@ import Moment from 'moment';
         parked = false;
       }
 
+      // Determine if charging
+      const charging = emob.chargingStatus == 'CHARGING';
+
       // Cache position
       cachedPosition.position = position.carCoordinate;
-      cachedPosition.parked = parked;
+      cachedPosition.parkedOrCharging = parked || charging;
       cachedPosition.ts = Moment();
 
       // Transform data
-      const charging = emob.chargingStatus == 'CHARGING';
       const data = {
         batteryLevel: overview.batteryLevel.value,
         remainingElectricRange: overview.remainingRanges.electricalRange.distance.valueInKilometers,
