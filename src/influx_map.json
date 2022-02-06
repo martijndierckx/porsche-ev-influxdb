@@ -1,0 +1,18 @@
+{
+  "batteryLevel": { "_type": "float", "_mapping": "batteryLevel" },
+  "remainingElectricRange": { "_type": "float", "_mapping": "remainingElectricRange" },
+  "mileage": { "_type": "float", "_mapping": "mileage" },
+  "position": {
+    "latitude": { "_type": "float", "_mapping": "positionLatitude" },
+    "longitude": { "_type": "float", "_mapping": "positionLogitude" },
+    "heading": { "_type": "float", "_mapping": "positionHeading" }
+  },
+  "closed": { "_type": "boolean", "_mapping": "closed" },
+  "pluggedIn": { "_type": "boolean", "_mapping": "pluggedIn" },
+  "charging": { "_type": "boolean", "_mapping": "charging" },
+  "charge": {
+    "rate": { "_type": "boolean", "_mapping": "chargeRate" },
+    "power": { "_type": "boolean", "_mapping": "chargePower" },
+    "DC": { "_type": "boolean", "_mapping": "chargingDC" }
+  }
+}

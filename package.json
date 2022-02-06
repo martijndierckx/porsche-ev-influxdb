@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "Martijn Dierckx",
+  "license": "ISC",
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.22.0",
+    "moment": "^2.29.1",
+    "porsche-connect": "^0.0.5",
+    "source-map-support": "^0.5.21",
+    "tldts": "^5.7.59",
+    "tslib": "~2.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.21",
+    "@types/source-map-support": "^0.5.4",
+    "@typescript-eslint/eslint-plugin": "5.10.0",
+    "@typescript-eslint/parser": "5.10.0",
+    "eslint": "~8.7.0",
+    "eslint-config-prettier": "~8.3.0",
+    "prettier": "~2.5.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc"
+  }
+}
