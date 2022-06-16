@@ -1,10 +1,13 @@
 import 'source-map-support/register';
 import { Database } from './Database';
-import PorscheConnect, { PorscheConnectConfig, Environment, VehicleOverview, VehiclePosition, VehicleEMobility } from 'porsche-connect';
+import PorscheConnect, { PorscheConnectConfig, Environment, VehicleOverview, VehiclePosition, VehicleEMobility, PorschePrivacyError } from 'porsche-connect';
 import fs from 'fs';
 import Moment from 'moment';
+import Express from 'express';
 
 (async () => {
+  let data = {};
+
   // Set refresh interval & Wait period
   const INTERVAL_PARKED = process.env.INTERVAL_PARKED ? parseInt(process.env.INTERVAL_PARKED) : 60000;
   const INTERVAL = process.env.INTERVAL ? parseInt(process.env.INTERVAL) : 5000;
@@ -17,6 +20,20 @@ import Moment from 'moment';
   };
   const VIN = process.env.VIN;
   const porsche = new PorscheConnect(porscheConnOpts);
+
+  // Configure webserver
+  if (process.env.HTTP_PORT) {
+    const HTTP_PORT = parseInt(process.env.HTTP_PORT);
+    const express = Express();
+
+    express.get('/data', (_req, res) => {
+      res.send(data);
+    });
+
+    express.listen(HTTP_PORT, () => {
+      console.log(`HTTP listening on port ${HTTP_PORT}`);
+    });
+  }
 
   // Retrieve vehicle data
   const vehicles = await porsche.getVehicles();
@@ -69,7 +86,12 @@ import Moment from 'moment';
       try {
         overview = await porsche.getVehicleCurrentOverview(vehicle.vin);
       } catch (e) {
-        console.error(`Retrieving overview failed:`);
+        if (e instanceof PorschePrivacyError) {
+          console.error(`Vehicle (probably) in privacy mode. Waiting 10 seconds before quiting/retrying...`);
+          await new Promise((resolve) => setTimeout(resolve, 10000));
+        } else {
+          console.error(`Retrieving overview failed:`);
+        }
         console.error(e);
         process.exit(1); // Force quit / restart
       }
@@ -113,7 +135,7 @@ import Moment from 'moment';
       cachedPosition.ts = Moment();
 
       // Transform data
-      const data = {
+      data = {
         batteryLevel: overview.batteryLevel.value,
         remainingElectricRange: overview.remainingRanges.electricalRange.distance.valueInKilometers,
         mileage: overview.mileage.valueInKilometers,
