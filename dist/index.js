@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 require("source-map-support/register");
 const Database_1 = require("./Database");
-const porsche_connect_1 = (0, tslib_1.__importStar)(require("porsche-connect"));
-const fs_1 = (0, tslib_1.__importDefault)(require("fs"));
-const moment_1 = (0, tslib_1.__importDefault)(require("moment"));
-const express_1 = (0, tslib_1.__importDefault)(require("express"));
+const porsche_connect_1 = tslib_1.__importStar(require("porsche-connect"));
+const fs_1 = tslib_1.__importDefault(require("fs"));
+const moment_1 = tslib_1.__importDefault(require("moment"));
+const express_1 = tslib_1.__importDefault(require("express"));
 (async () => {
     let data = {};
     const INTERVAL_PARKED = process.env.INTERVAL_PARKED ? parseInt(process.env.INTERVAL_PARKED) : 60000;
