@@ -28,6 +28,6 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
-    "publish": "docker buildx build --push --platform linux/amd64,linux/arm64,linux/arm/v7 --tag martijndierckx/porsche-ev-influxdb:$npm_package_version ."
+    "publish": "tsc && docker buildx build --push --platform linux/amd64,linux/arm64,linux/arm/v7 --tag martijndierckx/porsche-ev-influxdb:$npm_package_version --tag martijndierckx/porsche-ev-influxdb:latest ."
   }
 }
