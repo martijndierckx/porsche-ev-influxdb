@@ -29,18 +29,21 @@ import Express from 'express';
   const VIN = process.env.VIN;
   const porsche = new PorscheConnect(porscheConnOpts);
 
-  // Configure webserver
-  if (process.env.HTTP_PORT) {
-    const HTTP_PORT = parseInt(process.env.HTTP_PORT);
-    const express = Express();
+  // Configure webserver (triggered when there's data)
+  let express: Express.Express = null;
+  const setupHTTPServer = async (): Promise<void> => {
+    if (process.env.HTTP_PORT && express == null) {
+      const HTTP_PORT = parseInt(process.env.HTTP_PORT);
+      express = Express();
 
-    express.get('/data', (_req, res) => {
-      res.send(data);
-    });
+      express.get('/data', (_req, res) => {
+        res.send(data);
+      });
 
-    express.listen(HTTP_PORT, () => {
-      console.log(`HTTP listening on port ${HTTP_PORT}`);
-    });
+      express.listen(HTTP_PORT, () => {
+        console.log(`HTTP listening on port ${HTTP_PORT}`);
+      });
+    }
   }
 
   // Retrieve vehicle data
@@ -103,6 +106,8 @@ import Express from 'express';
 
       // In Privacy mode?
       if (inPrivacyMode) {
+        console.log(`Vehicle is in privacy mode. Waiting ${INTERVAL_PRIVACY/1000} seconds before attempting again.`)
+
         // Cache data
         cachedPosition.inPrivacyMode = true;
         cachedPosition.ts = Moment();
@@ -183,6 +188,9 @@ import Express from 'express';
               }
             : null
         };
+
+        // Enable HTTP server, if not already the case
+        setupHTTPServer();
 
         // Write values
         try {
