@@ -1,6 +1,13 @@
 import 'source-map-support/register';
 import { Database } from './Database';
-import PorscheConnect, { PorscheConnectConfig, Environment, VehicleOverview, VehiclePosition, VehicleEMobility, PorschePrivacyError } from 'porsche-connect';
+import PorscheConnect, {
+  PorscheConnectConfig,
+  Environment,
+  VehicleOverview,
+  VehiclePosition,
+  VehicleEMobility,
+  PorschePrivacyError
+} from 'porsche-connect';
 import fs from 'fs';
 import Moment from 'moment';
 import Express from 'express';
@@ -8,7 +15,8 @@ import Express from 'express';
 (async () => {
   let data = {};
 
-  // Set refresh interval & Wait period
+  // Set refresh interval & Wait periods
+  const INTERVAL_PRIVACY = process.env.INTERVAL_PRIVACY ? parseInt(process.env.INTERVAL_PRIVACY) : 300000;
   const INTERVAL_PARKED = process.env.INTERVAL_PARKED ? parseInt(process.env.INTERVAL_PARKED) : 60000;
   const INTERVAL = process.env.INTERVAL ? parseInt(process.env.INTERVAL) : 5000;
 
@@ -66,6 +74,7 @@ import Express from 'express';
       longitude: null
     },
     parkedOrCharging: false,
+    inPrivacyMode: false,
     ts: null
   };
 
@@ -76,94 +85,114 @@ import Express from 'express';
     if (
       !running &&
       (cachedPosition.ts == null ||
-        (timeSinceLastFetch >= INTERVAL && !cachedPosition.parkedOrCharging) ||
-        (timeSinceLastFetch >= INTERVAL_PARKED && cachedPosition.parkedOrCharging))
+        (timeSinceLastFetch >= INTERVAL && !cachedPosition.parkedOrCharging && !cachedPosition.inPrivacyMode) ||
+        (timeSinceLastFetch >= INTERVAL_PARKED && cachedPosition.parkedOrCharging && !cachedPosition.inPrivacyMode) ||
+        (timeSinceLastFetch >= INTERVAL_PRIVACY && cachedPosition.inPrivacyMode))
     ) {
       running = true;
 
-      // Get overview
-      let overview: VehicleOverview;
+      // Check Privacy mode?
+      let inPrivacyMode: boolean;
       try {
-        overview = await porsche.getVehicleCurrentOverview(vehicle.vin);
+        inPrivacyMode = await vehicle.isInPrivacyMode();
       } catch (e) {
-        if (e instanceof PorschePrivacyError) {
-          console.error(`Vehicle (probably) in privacy mode. Waiting 10 seconds before quiting/retrying...`);
-          await new Promise((resolve) => setTimeout(resolve, 10000));
-        } else {
-          console.error(`Retrieving overview failed:`);
+        console.error(`Retrieving privacy mode failed:`);
+        console.error(e);
+        process.exit(1); // Force quit / restart
+      }
+
+      // In Privacy mode?
+      if (inPrivacyMode) {
+        // Cache data
+        cachedPosition.inPrivacyMode = true;
+        cachedPosition.ts = Moment();
+      } else {
+        cachedPosition.inPrivacyMode = false;
+
+        // Get overview
+        let overview: VehicleOverview;
+        try {
+          overview = await vehicle.getCurrentOverview();
+        } catch (e) {
+          if (e instanceof PorschePrivacyError) {
+            console.error(`Vehicle (probably) in privacy mode. Waiting 10 seconds before quiting/retrying...`);
+            await new Promise((resolve) => setTimeout(resolve, 10000));
+          } else {
+            console.error(`Retrieving overview failed:`);
+          }
+          console.error(e);
+          process.exit(1); // Force quit / restart
         }
-        console.error(e);
-        process.exit(1); // Force quit / restart
-      }
 
-      // Get position
-      let position: VehiclePosition;
-      try {
-        position = await porsche.getVehiclePosition(vehicle.vin);
-      } catch (e) {
-        console.error(`Retrieving position failed:`);
-        console.error(e);
-        process.exit(1); // Force quit / restart
-      }
+        // Get position
+        let position: VehiclePosition;
+        try {
+          position = await vehicle.getPosition();
+        } catch (e) {
+          console.error(`Retrieving position failed:`);
+          console.error(e);
+          process.exit(1); // Force quit / restart
+        }
 
-      // Get emobility
-      let emob: VehicleEMobility;
-      try {
-        emob = await porsche.getVehicleEmobilityInfo(vehicle.vin, vehicle.carModel);
-      } catch (e) {
-        console.error(`Retrieving emobility failed:`);
-        console.error(e);
-        process.exit(1); // Force quit / restart
-      }
+        // Get emobility
+        let emob: VehicleEMobility;
+        try {
+          emob = await vehicle.getEmobilityInfo();
+        } catch (e) {
+          console.error(`Retrieving emobility failed:`);
+          console.error(e);
+          process.exit(1); // Force quit / restart
+        }
 
-      // Determine if parked
-      let parked = true;
-      if (
-        cachedPosition.ts == null ||
-        cachedPosition.position.latitude != position.carCoordinate.latitude ||
-        cachedPosition.position.longitude != position.carCoordinate.longitude
-      ) {
-        parked = false;
-      }
+        // Determine if parked
+        let parked = true;
+        if (
+          cachedPosition.ts == null ||
+          cachedPosition.position.latitude != position.carCoordinate.latitude ||
+          cachedPosition.position.longitude != position.carCoordinate.longitude
+        ) {
+          parked = false;
+        }
 
-      // Determine if charging
-      const charging = emob.batteryChargeStatus.chargingState == 'CHARGING';
+        // Determine if charging
+        const isCharging = emob.batteryChargeStatus.chargingState == 'CHARGING';
 
-      // Cache position
-      cachedPosition.position = position.carCoordinate;
-      cachedPosition.parkedOrCharging = parked || charging;
-      cachedPosition.ts = Moment();
+        // Cache position
+        cachedPosition.position = position.carCoordinate;
+        cachedPosition.parkedOrCharging = parked || isCharging;
+        cachedPosition.ts = Moment();
 
-      // Transform data
-      data = {
-        batteryLevel: overview.batteryLevel.value,
-        remainingElectricRange: overview.remainingRanges.electricalRange.distance.valueInKilometers,
-        mileage: overview.mileage.valueInKilometers,
-        position: {
-          latitude: position.carCoordinate.latitude,
-          longitude: position.carCoordinate.longitude,
-          heading: position.heading
-        },
-        closed: overview.overallOpenStatus == 'CLOSED',
-        pluggedIn: emob.batteryChargeStatus.plugState == 'CONNECTED',
-        charging: charging,
-        charge: charging
-          ? {
-              rate: emob.batteryChargeStatus.chargeRate.valueInKmPerHour,
-              power: emob.batteryChargeStatus.chargingPower,
-              DC: emob.batteryChargeStatus.chargingInDCMode
-            }
-          : null
-      };
+        // Transform data
+        data = {
+          batteryLevel: overview.batteryLevel.value,
+          remainingElectricRange: overview.remainingRanges.electricalRange.distance.valueInKilometers,
+          mileage: overview.mileage.valueInKilometers,
+          position: {
+            latitude: position.carCoordinate.latitude,
+            longitude: position.carCoordinate.longitude,
+            heading: position.heading
+          },
+          closed: overview.overallOpenStatus == 'CLOSED',
+          pluggedIn: emob.batteryChargeStatus.plugState == 'CONNECTED',
+          charging: isCharging,
+          charge: isCharging
+            ? {
+                rate: emob.batteryChargeStatus.chargeRate.valueInKmPerHour,
+                power: emob.batteryChargeStatus.chargingPower,
+                DC: emob.batteryChargeStatus.chargingInDCMode
+              }
+            : null
+        };
 
-      // Write values
-      try {
-        await db.write(data);
-        console.log(`Data written to InfluxDB`);
-      } catch (e) {
-        console.error(`Writing data to InfluxDB (${influxConnOpts.url}) failed:`);
-        console.error(e);
-        process.exit(1); // Force quit / restart
+        // Write values
+        try {
+          await db.write(data);
+          console.log(`Data written to InfluxDB`);
+        } catch (e) {
+          console.error(`Writing data to InfluxDB (${influxConnOpts.url}) failed:`);
+          console.error(e);
+          process.exit(1); // Force quit / restart
+        }
       }
 
       running = false;
