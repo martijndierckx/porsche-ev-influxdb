@@ -24,8 +24,7 @@
     "noImplicitThis": false,
     "strictNullChecks": false,
     "removeComments": true,
-    "skipLibCheck": true,
-    "importsNotUsedAsValues": "error"
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.js"]
 }
