@@ -19,16 +19,19 @@ const express_1 = tslib_1.__importDefault(require("express"));
     };
     const VIN = process.env.VIN;
     const porsche = new porsche_connect_1.default(porscheConnOpts);
-    if (process.env.HTTP_PORT) {
-        const HTTP_PORT = parseInt(process.env.HTTP_PORT);
-        const express = (0, express_1.default)();
-        express.get('/data', (_req, res) => {
-            res.send(data);
-        });
-        express.listen(HTTP_PORT, () => {
-            console.log(`HTTP listening on port ${HTTP_PORT}`);
-        });
-    }
+    let express = null;
+    const setupHTTPServer = async () => {
+        if (process.env.HTTP_PORT && express == null) {
+            const HTTP_PORT = parseInt(process.env.HTTP_PORT);
+            express = (0, express_1.default)();
+            express.get('/data', (_req, res) => {
+                res.send(data);
+            });
+            express.listen(HTTP_PORT, () => {
+                console.log(`HTTP listening on port ${HTTP_PORT}`);
+            });
+        }
+    };
     const vehicles = await porsche.getVehicles();
     const vehicle = vehicles.find((x) => {
         return x.vin.toLowerCase() == VIN.toLowerCase();
@@ -75,6 +78,7 @@ const express_1 = tslib_1.__importDefault(require("express"));
                 process.exit(1);
             }
             if (inPrivacyMode) {
+                console.log(`Vehicle is in privacy mode. Waiting ${INTERVAL_PRIVACY / 1000} seconds before attempting again.`);
                 cachedPosition.inPrivacyMode = true;
                 cachedPosition.ts = (0, moment_1.default)();
             }
@@ -143,6 +147,7 @@ const express_1 = tslib_1.__importDefault(require("express"));
                         }
                         : null
                 };
+                setupHTTPServer();
                 try {
                     await db.write(data);
                     console.log(`Data written to InfluxDB`);
