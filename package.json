@@ -27,6 +27,7 @@
   },
   "scripts": {
     "start": "node dist/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "publish": "docker buildx build --push --platform linux/amd64,linux/arm64,linux/arm/v7 --tag martijndierckx/porsche-ev-influxdb:$npm_package_version ."
   }
 }
