@@ -44,7 +44,7 @@ import Express from 'express';
         console.log(`HTTP listening on port ${HTTP_PORT}`);
       });
     }
-  }
+  };
 
   // Retrieve vehicle data
   const vehicles = await porsche.getVehicles();
@@ -106,7 +106,7 @@ import Express from 'express';
 
       // In Privacy mode?
       if (inPrivacyMode) {
-        console.log(`Vehicle is in privacy mode. Waiting ${INTERVAL_PRIVACY/1000} seconds before attempting again.`)
+        console.log(`Vehicle is in privacy mode. Waiting ${INTERVAL_PRIVACY / 1000} seconds before attempting again.`);
 
         // Cache data
         cachedPosition.inPrivacyMode = true;
